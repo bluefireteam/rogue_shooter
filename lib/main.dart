@@ -45,6 +45,15 @@ class RogueShooterGameWidget extends StatelessWidget {
   }
 }
 
+class CollideableRect {
+  Rect rect;
+  List<CollideableRect> collidingWith = [];
+
+  void resetCollisions() {
+    collidingWith.clear();
+  }
+}
+
 class RogueShooterGame extends Game {
 
   static const double shoot_speed = -600.0;
@@ -55,8 +64,8 @@ class RogueShooterGame extends Game {
   Size _screenSize;
   Rect _player;
 
-  List<Rect> _shoots = [];
-  List<Rect> _enemies = [];
+  List<CollideableRect> _shoots = [];
+  List<CollideableRect> _enemies = [];
 
   Timer _shooter;
   Timer _enemySpawmer;
@@ -77,7 +86,9 @@ class RogueShooterGame extends Game {
   }
 
   void _createEnemy() {
-    _enemies.add(Rect.fromLTWH(
+    _enemies.add(
+        CollideableRect()
+        ..rect =Rect.fromLTWH(
             max(20, random.nextDouble() * _screenSize.width - 20),
             0,
             20,
@@ -86,7 +97,9 @@ class RogueShooterGame extends Game {
   }
 
   void _createShoot() {
-    _shoots.add(Rect.fromLTWH(_player.left + 20, _player.top, 10, 20));
+    _shoots.add(CollideableRect()
+        ..rect = Rect.fromLTWH(_player.left + 20, _player.top, 10, 20)
+    );
   }
 
   void startShooting() {
@@ -108,33 +121,41 @@ class RogueShooterGame extends Game {
     _shooter.update(dt);
     _enemySpawmer.update(dt);
 
-    for (var i = 0; i < _shoots.length; i++) {
-      _shoots[i] = _shoots[i].translate(0, shoot_speed * dt);
-    }
-
-    _shoots.removeWhere((rect) => rect.bottom <= 0);
-
     for (var i = 0; i < _enemies.length; i++) {
-      _enemies[i] = _enemies[i].translate(0, enemy_speed * dt);
+      _enemies[i].resetCollisions();
+      _enemies[i].rect = _enemies[i].rect.translate(0, enemy_speed * dt);
     }
-    _enemies.removeWhere((enemy) {
-      return enemy.top >= _screenSize.height || _shoots.firstWhere(
-          (shoot) => shoot.overlaps(enemy),
-          orElse: () => null
-      ) != null;
+    for (var i = 0; i < _shoots.length; i++) {
+      _shoots[i].resetCollisions();
+      _shoots[i].rect = _shoots[i].rect.translate(0, shoot_speed * dt);
+    }
+
+    // Check collisions of shoots with enemies
+    _shoots.forEach((shoot) {
+      _enemies.forEach((enemy) {
+        if (shoot.rect.overlaps(enemy.rect)) {
+          shoot.collidingWith.add(enemy);
+          enemy.collidingWith.add(shoot);
+        }
+      });
     });
+
+    // Remove and enemies that are out of the screen or has been destroyed
+    _shoots.removeWhere((shoot) => shoot.collidingWith.isNotEmpty || shoot.rect.bottom <= 0);
+    _enemies.removeWhere((enemy) => enemy.collidingWith.isNotEmpty || enemy.rect.top >= _screenSize.height);
+
   }
 
   @override
   void render(Canvas canvas) {
     canvas.drawRect(_player, _white);
 
-    _shoots.forEach((rect) {
-      canvas.drawRect(rect, _white);
+    _shoots.forEach((shoot) {
+      canvas.drawRect(shoot.rect, _white);
     });
 
-    _enemies.forEach((rect) {
-      canvas.drawRect(rect, _white);
+    _enemies.forEach((enemy) {
+      canvas.drawRect(enemy.rect, _white);
     });
   }
 }
