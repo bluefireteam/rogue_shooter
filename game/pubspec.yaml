@@ -17,3 +17,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/player.png
+    - assets/images/enemy.png
+    - assets/images/bullet.png
+    - assets/images/explosion.png
+    - assets/images/stars.png
