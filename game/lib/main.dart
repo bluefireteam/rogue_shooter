@@ -1,272 +1,265 @@
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
-import 'package:flame/flame.dart';
 import 'package:flame/time.dart';
-import 'package:flame/spritesheet.dart';
+import 'package:flame/flame.dart';
 import 'package:flame/animation.dart' as FlameAnimation;
+import 'package:flame/spritesheet.dart';
 
 import 'dart:math';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
   await Flame.util.setPortrait();
   await Flame.util.fullScreen();
-  final screenSize = await Flame.util.initialDimensions();
+  Size size = await Flame.util.initialDimensions();
 
-  runApp(RogueShooterGameWidget(screenSize: screenSize));
+  runApp(GameWidget(size));
 }
 
-class RogueShooterGameWidget extends StatelessWidget {
-  final Size screenSize;
 
-  RogueShooterGameWidget({ this.screenSize });
+class GameWidget extends StatelessWidget {
+  final Size size;
+
+  GameWidget(this.size);
 
   @override
   Widget build(BuildContext context) {
-    final game = RogueShooterGame(screenSize);
 
+    final game = SpaceShooterGame(size);
     return GestureDetector(
+        onPanStart: (_) {
+          game.beginFire();
+        },
+        onPanEnd: (_) {
+          game.stopFire();
+        },
+        onPanCancel: () {
+          game.stopFire();
+        },
+        onPanUpdate: (DragUpdateDetails details) {
+          game.onPlayerMove(details.delta);
+        },
         child: Container(
             color: Color(0xFF000000),
             child: game.widget
         ),
-        onPanDown: (_) {
-          game.startShooting();
-        },
-        onPanCancel: () {
-          game.stopShooting();
-        },
-        onPanEnd: (_) {
-          game.stopShooting();
-        },
-        onPanUpdate: (DragUpdateDetails details) {
-          game.movePlayer(details.delta);
-        },
     );
   }
 }
 
-class Explosion {
-  Rect rect;
-  FlameAnimation.Animation animation;
+class AnimationCollidableGameObject extends AnimationGameObject {
+  List<AnimationCollidableGameObject> collidingObjects = [];
 }
 
-class Star {
-  Rect rect;
+class AnimationGameObject {
+  Rect position;
   FlameAnimation.Animation animation;
-}
 
-class CollideableAnimation {
-  Rect rect;
-  FlameAnimation.Animation animation;
-  List<CollideableAnimation> collidingWith = [];
+  void render(Canvas canvas) {
+    if (animation.loaded()) {
+      animation.getSprite().renderRect(canvas, position);
+    }
+  }
 
-  void resetCollisions() {
-    collidingWith.clear();
+  void update(double dt) {
+    animation.update(dt);
   }
 }
 
-class RogueShooterGame extends Game {
+class SpaceShooterGame extends Game {
 
-  static const double shoot_speed = -600.0;
-  static const double enemy_speed = 50.0;
-  static const double star_speed = 10.0;
+  final Size screenSize;
 
-  static Random random = Random();
+  Random random = Random();
 
-  Size _screenSize;
-  Rect _player;
-  FlameAnimation.Animation _playerAnimation;
+  static const enemy_speed = 150;
+  static const shoot_speed = -500;
+  static const star_speed = 10;
 
-  List<CollideableAnimation> _shoots = [];
-  List<CollideableAnimation> _enemies = [];
-  List<Explosion> _explosions = [];
-  List<Star> _stars = [];
+  AnimationGameObject player;
 
-  SpriteSheet _starsSpritesheet;
+  Timer enemyCreator;
+  Timer shootCreator;
+  Timer starCreator;
 
-  Timer _shooter;
-  Timer _enemySpawmer;
-  Timer _starSpawmer;
+  List<AnimationCollidableGameObject> enemies = [];
+  List<AnimationCollidableGameObject> shoots = [];
+  List<AnimationCollidableGameObject> explosions = [];
+  List<AnimationCollidableGameObject> stars = [];
 
-  RogueShooterGame(this._screenSize) {
-    _player = Rect.fromLTWH(_screenSize.width / 2 - 25, _screenSize.height - 75, 50, 75);
+  SpriteSheet starsSpritesheet;
 
-    _shooter = Timer(0.2, repeat: true, callback: () {
-      _createShoot();
+  SpaceShooterGame(this.screenSize) {
+    player = AnimationGameObject()
+        ..position = Rect.fromLTWH(100, 500, 50, 75)
+        ..animation = FlameAnimation.Animation.sequenced("player.png", 4, textureWidth: 32, textureHeight: 48);
+
+    enemyCreator = Timer(1.0, repeat: true, callback: () {
+      enemies.add(
+          AnimationCollidableGameObject()
+          ..animation = FlameAnimation.Animation.sequenced("enemy.png", 4, textureWidth: 16, textureHeight: 16)
+          ..position = Rect.fromLTWH((screenSize.width - 25) * random.nextDouble(), 0, 25, 25)
+      );
+    });
+    enemyCreator.start();
+
+    shootCreator = Timer(0.5, repeat: true, callback: () {
+      shoots.add(
+          AnimationCollidableGameObject()
+          ..animation = FlameAnimation.Animation.sequenced("bullet.png", 4, textureWidth: 8, textureHeight: 16)
+          ..position = Rect.fromLTWH(
+              player.position.left + 20,
+              player.position.top - 20,
+              10,
+              20
+          )
+      );
     });
 
-    _enemySpawmer = Timer(1, repeat: true, callback: () {
-      _createEnemy();
+    final starGapTime = (screenSize.height / 10) / star_speed;
+
+    starCreator = Timer(starGapTime, repeat: true, callback: () {
+      createRowOfStars(0);
     });
-    _enemySpawmer.start();
+    starCreator.start();
 
-    final starGapTime = (_screenSize.height / 10) / star_speed;
-    _starSpawmer = Timer(starGapTime, repeat: true, callback: () {
-      _createRowOfStars(0);
-    });
-    _starSpawmer.start();
-
-    _playerAnimation = FlameAnimation.Animation.sequenced("player.png", 4, textureWidth: 32, textureHeight: 48);
-
-    _starsSpritesheet = SpriteSheet(imageName: "stars.png", textureWidth: 9, textureHeight: 9, rows: 4, columns: 4);
-
-    _createInitialStars();
-  }
-
-  void _createEnemy() {
-    _enemies.add(
-        CollideableAnimation()
-        ..animation = FlameAnimation.Animation.sequenced("enemy.png", 4, textureWidth: 16, textureHeight: 16)
-        ..rect =Rect.fromLTWH(
-            max(25, random.nextDouble() * _screenSize.width - 25),
-            0,
-            25,
-            25)
+    starsSpritesheet = SpriteSheet(
+        imageName: "stars.png",
+        textureWidth: 9,
+        textureHeight: 9,
+        rows: 4,
+        columns: 4
     );
+
+    createInitialStarts();
   }
 
-  void _createShoot() {
-    _shoots.add(CollideableAnimation()
-        ..animation = FlameAnimation.Animation.sequenced("bullet.png", 4, textureWidth: 8, textureHeight: 16)
-        ..rect = Rect.fromLTWH(_player.left + 20, _player.top, 10, 20)
-    );
+  void onPlayerMove(Offset delta) {
+    player.position = player.position.translate(delta.dx, delta.dy);
   }
 
-  void _createExplosiongAt(double x, double y) {
+  void beginFire() {
+    shootCreator.start();
+  }
+
+  void stopFire() {
+    shootCreator.stop();
+  }
+
+  void creatExplosionAt(double x, double y) {
     final animation = FlameAnimation.Animation.sequenced("explosion.png", 6, textureWidth: 32, textureHeight: 32, stepTime: 0.05)
         ..loop = false;
 
-    _explosions.add(
-        Explosion()
+    explosions.add(
+        AnimationCollidableGameObject()
         ..animation = animation
-        ..rect = Rect.fromLTWH(x - 25, y - 25, 50, 50)
+        ..position = Rect.fromLTWH(x - 25, y - 25, 50, 50)
     );
   }
 
-  void _createStarAt(double x, double y) {
-    final animation = _starsSpritesheet.createAnimation(random.nextInt(3), to: 4)
+  void createStarAt(double x, double y) {
+    final animation = starsSpritesheet.createAnimation(random.nextInt(3), to: 4)
         ..variableStepTimes = [
           max(20, 100 * random.nextDouble()),
           0.1, 0.1, 0.1
         ];
 
-    _stars.add(
-        Star()
-        ..rect = Rect.fromLTWH(x, y, 20, 20)
+    stars.add(
+        AnimationCollidableGameObject()
+        ..position = Rect.fromLTWH(x, y, 20, 20)
         ..animation = animation
     );
   }
 
-  void _createRowOfStars(double y) {
-    double starGap = _screenSize.width / 3;
+  void createRowOfStars(double y) {
+    final gapSize = 6;
+    double starGap = screenSize.height / gapSize;
 
-    for (var i = 0; i < 3; i++) {
-      _createStarAt(
+    for (var i = 0; i < gapSize; i++) {
+      createStarAt(
           starGap * i + (random.nextDouble() * starGap),
           y + (random.nextDouble() * 20)
       );
     }
   }
 
-  void _createInitialStars() {
-    double rows = _screenSize.height / 10;
+  void createInitialStarts() {
+    final gapSize = 10;
+    double rows = screenSize.height / gapSize;
 
-    for (var i = 0; i < 10; i++) {
-      _createRowOfStars(i * rows);
+    for (var i = 0; i < gapSize;  i++) {
+      createRowOfStars(i * rows);
     }
-  }
-
-  void startShooting() {
-    _shooter.start();
-  }
-
-  void stopShooting() {
-    _shooter.stop();
-  }
-
-  void movePlayer(Offset offset) {
-    final newPosition = _player.translate(offset.dx, offset.dy);
-    if (newPosition.left >= 0 && newPosition.right <= _screenSize.width)
-      _player = newPosition;
   }
 
   @override
   void update(double dt) {
-    _shooter.update(dt);
-    _enemySpawmer.update(dt);
-    _playerAnimation.update(dt);
-    _starSpawmer.update(dt);
+    enemyCreator.update(dt);
+    shootCreator.update(dt);
+    starCreator.update(dt);
 
-    for (var i = 0; i < _stars.length; i++) {
-      _stars[i].rect = _stars[i].rect.translate(0, star_speed * dt);
-      _stars[i].animation.update(dt);
-    }
+    player.update(dt);
 
-    for (var i = 0; i < _enemies.length; i++) {
-      _enemies[i].resetCollisions();
-      _enemies[i].animation.update(dt);
-      _enemies[i].rect = _enemies[i].rect.translate(0, enemy_speed * dt);
-    }
-    for (var i = 0; i < _shoots.length; i++) {
-      _shoots[i].resetCollisions();
-      _shoots[i].animation.update(dt);
-      _shoots[i].rect = _shoots[i].rect.translate(0, shoot_speed * dt);
-    }
+    enemies.forEach((enemy) {
+      enemy.update(dt);
+      enemy.position = enemy.position.translate(0, enemy_speed * dt);
+    });
 
-    // Check collisions of shoots with enemies
-    _shoots.forEach((shoot) {
-      _enemies.forEach((enemy) {
-        if (shoot.rect.overlaps(enemy.rect)) {
-          shoot.collidingWith.add(enemy);
-          enemy.collidingWith.add(shoot);
+    shoots.forEach((shoot) {
+      shoot.update(dt);
+      shoot.position = shoot.position.translate(0, shoot_speed * dt);
+    });
 
-          _createExplosiongAt(enemy.rect.center.dx, enemy.rect.center.dy);
+
+    stars.forEach((star) {
+      star.update(dt);
+      star.position = star.position.translate(0, star_speed * dt);
+    });
+
+    explosions.forEach((explosion) {
+      explosion.update(dt);
+    });
+
+    shoots.forEach((shoot) {
+      enemies.forEach((enemy) {
+        if (shoot.position.overlaps(enemy.position)) {
+          creatExplosionAt(shoot.position.left, shoot.position.top);
+          shoot.collidingObjects.add(enemy);
+          enemy.collidingObjects.add(shoot);
         }
       });
     });
 
-    _explosions.forEach((explosion) {
-      explosion.animation.update(dt);
+    stars.removeWhere((star) => star.position.top >= screenSize.height);
+
+    enemies.removeWhere((enemy) {
+      return enemy.position.top >= screenSize.height || enemy.collidingObjects.isNotEmpty;
+    });
+    shoots.removeWhere((shoot) {
+      return shoot.position.bottom <= 0 || shoot.collidingObjects.isNotEmpty;
     });
 
-    // Remove and enemies that are out of the screen or has been destroyed
-    _shoots.removeWhere((shoot) => shoot.collidingWith.isNotEmpty || shoot.rect.bottom <= 0);
-    _enemies.removeWhere((enemy) => enemy.collidingWith.isNotEmpty || enemy.rect.top >= _screenSize.height);
-
-    // Remove finished explosions
-    _explosions.removeWhere((explosion) => explosion.animation.isLastFrame);
-
-    // Remove stars out of the screen
-    _stars.removeWhere((star) => star.rect.top >= _screenSize.height);
+    explosions.removeWhere((explosion) => explosion.animation.isLastFrame);
   }
 
   @override
   void render(Canvas canvas) {
-    _stars.forEach((star) {
-      if (star.animation.loaded()) {
-        star.animation.getSprite().renderRect(canvas, star.rect);
-      }
+    player.render(canvas);
+
+    enemies.forEach((enemy) {
+      enemy.render(canvas);
     });
 
-    if (_playerAnimation.loaded())
-      _playerAnimation.getSprite().renderRect(canvas, _player);
-
-    _shoots.forEach((shoot) {
-      if (shoot.animation.loaded())
-        shoot.animation.getSprite().renderRect(canvas, shoot.rect);
+    shoots.forEach((shoot) {
+      shoot.render(canvas);
     });
 
-    _enemies.forEach((enemy) {
-      if (enemy.animation.loaded())
-        enemy.animation.getSprite().renderRect(canvas, enemy.rect);
+    explosions.forEach((explosion) {
+      explosion.render(canvas);
     });
 
-    _explosions.forEach((explosion) {
-      if (explosion.animation.loaded()) {
-        explosion.animation.getSprite().renderRect(canvas, explosion.rect);
-      }
+    stars.forEach((star) {
+      star.render(canvas);
     });
   }
 }
+
