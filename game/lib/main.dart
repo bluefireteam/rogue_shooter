@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flame/flame.dart';
+import 'package:flutter/foundation.dart';
 
 import './game.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // TODO Verify if is web
-  //await Flame.util.setPortrait();
-  //await Flame.util.fullScreen();
-  Size size = await Flame.util.initialDimensions();
-
-  print(size.width);
-
+  if (!kIsWeb) {
+    await Flame.util.setPortrait();
+    await Flame.util.fullScreen();
+  }
+  final size = await Flame.util.initialDimensions();
   runApp(SpaceShooterGame(size).widget);
+
 }

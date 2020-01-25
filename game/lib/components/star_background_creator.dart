@@ -51,7 +51,7 @@ class StarBackGroundCreator extends Component with HasGameRef<SpaceShooterGame>{
   }
   _createRowOfStars(double y) {
     final gapSize = 6;
-    double starGap = screenSize.height / gapSize;
+    double starGap = screenSize.width / gapSize;
 
     for (var i = 0; i < gapSize; i++) {
       _createStarAt(
