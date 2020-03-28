@@ -9,7 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flame: ^0.17.1
+  flame:
+    path: ../../flame
+  audioplayers: 0.15.0-beta.1
 
 dev_dependencies:
   flutter_test:
@@ -23,3 +25,4 @@ flutter:
     - assets/images/bullet.png
     - assets/images/explosion.png
     - assets/images/stars.png
+    - assets/audio/small-explosion.wav
