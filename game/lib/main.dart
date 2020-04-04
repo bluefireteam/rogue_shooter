@@ -12,7 +12,6 @@ void main() async {
     await Flame.util.fullScreen();
   }
   final size = await Flame.util.initialDimensions();
-  Audio.backgroundMusic();
   runApp(SpaceShooterGame(size).widget);
-
+  Audio.backgroundMusic();
 }
