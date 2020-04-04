@@ -23,12 +23,12 @@ packages:
     source: hosted
     version: "2.4.0"
   audioplayers:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: audioplayers
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.15.0-beta.1"
+    version: "0.15.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -84,7 +84,7 @@ packages:
       path: "../../flame"
       relative: true
     source: path
-    version: "0.18.3-beta"
+    version: "0.18.2"
   flare_dart:
     dependency: transitive
     description:

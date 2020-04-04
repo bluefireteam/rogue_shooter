@@ -11,7 +11,6 @@ dependencies:
     sdk: flutter
   flame:
     path: ../../flame
-  audioplayers: 0.15.0-beta.1
 
 dev_dependencies:
   flutter_test:
@@ -26,3 +25,4 @@ flutter:
     - assets/images/explosion.png
     - assets/images/stars.png
     - assets/audio/small-explosion.wav
+    - assets/audio/space-idea.mp3

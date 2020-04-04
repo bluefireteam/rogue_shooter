@@ -3,6 +3,7 @@ import 'package:flame/flame.dart';
 import 'package:flutter/foundation.dart';
 
 import './game.dart';
+import './audio.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +12,7 @@ void main() async {
     await Flame.util.fullScreen();
   }
   final size = await Flame.util.initialDimensions();
+  Audio.backgroundMusic();
   runApp(SpaceShooterGame(size).widget);
 
 }
