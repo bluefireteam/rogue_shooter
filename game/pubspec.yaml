@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flame: ^0.17.1
+  flame: ^0.18.3
 
 dev_dependencies:
   flutter_test:
@@ -23,3 +23,5 @@ flutter:
     - assets/images/bullet.png
     - assets/images/explosion.png
     - assets/images/stars.png
+    - assets/audio/small-explosion.wav
+    - assets/audio/space-idea.mp3
