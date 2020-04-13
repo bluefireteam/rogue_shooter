@@ -8,6 +8,7 @@ import './components/player_component.dart';
 import './components/enemy_creator.dart';
 import './components/star_background_creator.dart';
 import './components/score_component.dart';
+import './audio.dart';
 
 class SpaceShooterGame extends BaseGame with PanDetector {
 
@@ -15,6 +16,7 @@ class SpaceShooterGame extends BaseGame with PanDetector {
   StarBackGroundCreator starBackGroundCreator;
 
   int score = 0;
+  bool _musicStarted = false;
 
   SpaceShooterGame(Size size) {
     this.size = size;
@@ -33,6 +35,10 @@ class SpaceShooterGame extends BaseGame with PanDetector {
 
   @override
   void onPanStart(_) {
+    if (!_musicStarted) {
+      _musicStarted = true;
+      Audio.backgroundMusic();
+    }
     player?.beginFire();
   }
 
