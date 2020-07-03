@@ -11,7 +11,7 @@ import './star_component.dart';
 
 class StarBackGroundCreator extends Component with HasGameRef<SpaceShooterGame>{
   static const star_speed = 10;
-  final gapSize = 12;
+  final gapSize = 6;
 
   Timer starCreator;
   SpriteSheet starsSpritesheet;

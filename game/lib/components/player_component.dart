@@ -9,6 +9,8 @@ import '../game.dart';
 import './bullet_component.dart';
 import './explosion_component.dart';
 
+import '../web_gamepad_controller.dart';
+
 class PlayerComponent extends AnimationComponent with HasGameRef<SpaceShooterGame> {
 
   bool destroyed = false;
@@ -43,6 +45,27 @@ class PlayerComponent extends AnimationComponent with HasGameRef<SpaceShooterGam
     super.update(dt);
 
     bulletCreator.update(dt);
+
+    _checkGamePadControls(dt);
+  }
+
+  void _checkGamePadControls(double dt) {
+    final gamepad = connectedGamepad();
+
+    if (gamepad != null) {
+      x += gamepad.axes[0] * 300 * dt;
+      y += gamepad.axes[1] * 300 * dt;
+
+      if (gamepad.buttons[0].pressed) {
+        if (!bulletCreator.isRunning()) {
+          beginFire();
+        }
+      } else {
+        if (bulletCreator.isRunning()) {
+          stopFire();
+        }
+      }
+    }
   }
 
   void takeHit() {

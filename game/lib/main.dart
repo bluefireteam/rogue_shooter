@@ -3,9 +3,10 @@ import 'package:flame/flame.dart';
 import 'package:flutter/foundation.dart';
 
 import './game.dart';
-import './audio.dart';
+import './web_gamepad_controller.dart';
 
 void main() async {
+  initGamepad();
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb) {
     await Flame.util.setPortrait();
