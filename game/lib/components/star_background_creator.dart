@@ -24,8 +24,8 @@ class StarBackGroundCreator extends Component with HasGameRef<SpaceShooterGame>{
   void init() {
     starsSpritesheet = SpriteSheet(
         imageName: "stars.png",
-        textureWidth: 9,
-        textureHeight: 9,
+        textureWidth: 16,
+        textureHeight: 16,
         rows: 4,
         columns: 4
     );

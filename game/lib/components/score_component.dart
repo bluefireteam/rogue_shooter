@@ -16,6 +16,7 @@ class ScoreComponent extends TextComponent with HasGameRef<SpaceShooterGame> {
 
   @override
   void update(double dt) {
+    super.update(dt);
     text = "Score ${gameRef.score}";
   }
 }
