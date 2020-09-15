@@ -1,16 +1,17 @@
 import 'package:flame/components/animation_component.dart';
-import 'package:flame/animation.dart';
 import 'package:flame/components/mixins/has_game_ref.dart';
 
 import '../game.dart';
 import './enemy_component.dart';
+
+import '../assets.dart';
 
 class BulletComponent extends AnimationComponent with HasGameRef<SpaceShooterGame>{
   static const bullet_speed = -500;
 
   bool destroyed = false;
 
-  BulletComponent(double x, double y): super(10, 20, Animation.sequenced("bullet.png", 4, textureWidth: 16, textureHeight: 16)) {
+  BulletComponent(double x, double y): super(10, 20, Assets.atlas.getAnimation('bullet')) {
       this.x = x;
       this.y = y;
     }

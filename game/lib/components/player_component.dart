@@ -1,5 +1,4 @@
 import 'package:flame/components/animation_component.dart';
-import 'package:flame/animation.dart';
 import 'package:flame/time.dart';
 
 import 'package:flame/components/mixins/has_game_ref.dart';
@@ -8,13 +7,14 @@ import '../game.dart';
 
 import './bullet_component.dart';
 import './explosion_component.dart';
+import '../assets.dart';
 
 class PlayerComponent extends AnimationComponent with HasGameRef<SpaceShooterGame> {
 
   bool destroyed = false;
   Timer bulletCreator;
 
-  PlayerComponent(): super(50, 75, Animation.sequenced("player.png", 4, textureWidth: 32, textureHeight: 48)) {
+  PlayerComponent(): super(50, 75, Assets.atlas.getAnimation('player')) {
     x = 100;
     y = 500;
 

@@ -99,6 +99,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.24.0"
+  flame_fire_atlas:
+    dependency: "direct main"
+    description:
+      name: flame_fire_atlas
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.0.4"
   flare_dart:
     dependency: transitive
     description:

@@ -1,10 +1,10 @@
 import 'package:flame/components/animation_component.dart';
-import 'package:flame/animation.dart';
 import 'package:flame/components/mixins/has_game_ref.dart';
 
 import '../game.dart';
 
 import './explosion_component.dart';
+import '../assets.dart';
 
 class EnemyComponent extends AnimationComponent with HasGameRef<SpaceShooterGame>{
 
@@ -13,7 +13,7 @@ class EnemyComponent extends AnimationComponent with HasGameRef<SpaceShooterGame
   bool destroyed = false;
 
   EnemyComponent(double x, double y):
-    super(25, 25,Animation.sequenced("enemy.png", 4, textureWidth: 16, textureHeight: 16)) {
+    super(25, 25, Assets.atlas.getAnimation('enemy')) {
       this.x = x;
       this.y = y;
     }
