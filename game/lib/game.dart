@@ -15,6 +15,8 @@ class SpaceShooterGame extends BaseGame with PanDetector {
   PlayerComponent player;
   StarBackGroundCreator starBackGroundCreator;
 
+  bool _effect = false;
+
   int score = 0;
   bool _musicStarted = false;
 
@@ -74,5 +76,32 @@ class SpaceShooterGame extends BaseGame with PanDetector {
             ..start()
         )
     );
+  }
+
+  final redFilter = Paint()..colorFilter = ColorFilter.mode(const Color(0xFFFF0000).withOpacity(0.4), BlendMode.srcATop)..color = Color(0xFFFFFFFF).withOpacity(0.33);
+  final blueFilter = Paint()..colorFilter = ColorFilter.mode(const Color(0xFF0000FF).withOpacity(0.4), BlendMode.srcATop)..color = Color(0xFFFFFFFF).withOpacity(0.33);
+  final greenFilter = Paint()..colorFilter = ColorFilter.mode(const Color(0xFF00FF00).withOpacity(0.4), BlendMode.srcATop)..color = Color(0xFFFFFFFF).withOpacity(0.33);
+
+  void toggleEffect() {
+    _effect = !_effect;
+  }
+
+  @override
+  void render(Canvas canvas) {
+    if (_effect) {
+      canvas.saveLayer(Rect.largest, redFilter);
+      super.render(canvas);
+      canvas.restore();
+      canvas.translate(-2, 2);
+      canvas.saveLayer(Rect.largest, blueFilter);
+      super.render(canvas);
+      canvas.restore();
+      canvas.translate(-3, -1);
+      canvas.saveLayer(Rect.largest, greenFilter);
+      super.render(canvas);
+      canvas.restore();
+    } else {
+      super.render(canvas);
+    }
   }
 }
